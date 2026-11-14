@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  clinic        Clinic?
+  appointments  Appointment[]
+  pets          Pet[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  VETERINARIAN
+  PET_OWNER
+}
+
+model Clinic {
+  id           String     @id @default(cuid())
+  name         String
+  description  String?
+  city         String
+  specialties  String[] // JSON array stored as TEXT[]
+  address      String
+  phone        String
+  vetId        String     @unique
+  vet          User       @relation(fields: [vetId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  availabilitySchedule AvailabilitySchedule?
+  appointments         Appointment[]
+
+  @@index([vetId])
+  @@map("clinics")
+}
+
+model AvailabilitySchedule {
+  id                 String             @id @default(cuid())
+  clinicId           String             @unique
+  clinic             Clinic             @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  // Weekly schedule times (stored as HH:mm format, e.g., "09:00")
+  mondayStart        String?
+  mondayEnd          String?
+  tuesdayStart       String?
+  tuesdayEnd         String?
+  wednesdayStart     String?
+  wednesdayEnd       String?
+  thursdayStart      String?
+  thursdayEnd        String?
+  fridayStart        String?
+  fridayEnd          String?
+  saturdayStart      String?
+  saturdayEnd        String?
+  sundayStart        String?
+  sundayEnd          String?
+
+  slotDurationMinutes Int     @default(30)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  slots AvailabilitySlot[]
+
+  @@index([clinicId])
+  @@map("availability_schedules")
+}
+
+model AvailabilitySlot {
+  id         String     @id @default(cuid())
+  scheduleId String
+  schedule   AvailabilitySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  startTime  DateTime
+  endTime    DateTime
+  isBooked   Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // Relations
+  appointment Appointment?
+
+  @@unique([scheduleId, startTime]) // Prevent duplicate slots
+  @@index([scheduleId])
+  @@index([isBooked])
+  @@map("availability_slots")
+}
+
+model Appointment {
+  id       String     @id @default(cuid())
+  ownerId  String
+  owner    User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  clinicId String
+  clinic   Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  slotId   String     @unique
+  slot     AvailabilitySlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  petId    String?
+  pet      Pet?       @relation(fields: [petId], references: [id], onDelete: SetNull)
+  notes    String?
+  status   AppointmentStatus @default(CONFIRMED)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  feedback Feedback?
+
+  @@index([ownerId])
+  @@index([clinicId])
+  @@index([slotId])
+  @@index([status])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Pet {
+  id        String     @id @default(cuid())
+  ownerId   String
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  species   PetSpecies
+  size      PetSize
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  appointments Appointment[]
+
+  @@index([ownerId])
+  @@map("pets")
+}
+
+enum PetSpecies {
+  PERRO
+  GATO
+  OTRO
+}
+
+enum PetSize {
+  PEQUENO
+  MEDIANO
+  GRANDE
+}
+
+model Feedback {
+  id            String     @id @default(cuid())
+  appointmentId String     @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  rating        Int // 1-5 stars
+  feedback      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([appointmentId])
+  @@map("feedbacks")
+}
