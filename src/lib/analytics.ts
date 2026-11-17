@@ -1,15 +1,19 @@
 let amplitudeClient: any = null;
 
-// Amplitude is optional for now - not installed in dependencies
-try {
-  const amplitude = require("amplitude");
-  amplitudeClient =
-    process.env.NEXT_PUBLIC_AMPLITUDE_KEY
-      ? new amplitude.Amplitude(process.env.NEXT_PUBLIC_AMPLITUDE_KEY)
-      : null;
-} catch (error) {
-  // Amplitude not available, tracking will be no-op
-}
+// Amplitude is optional - will be initialized at runtime if key is provided
+const initAmplitude = () => {
+  if (amplitudeClient || typeof window === "undefined") return;
+
+  if (process.env.NEXT_PUBLIC_AMPLITUDE_KEY) {
+    try {
+      // Dynamic import at runtime only
+      const amplitude = require("amplitude");
+      amplitudeClient = new amplitude.Amplitude(process.env.NEXT_PUBLIC_AMPLITUDE_KEY);
+    } catch (error) {
+      console.warn("Amplitude initialization failed:", error);
+    }
+  }
+};
 
 export type AmplitudeEvent =
   | "search_clinics"
@@ -26,8 +30,8 @@ export function trackEvent(
   userId?: string,
   eventProperties?: Record<string, any>
 ) {
+  initAmplitude();
   if (!amplitudeClient) {
-    console.warn("Amplitude not configured");
     return;
   }
 
@@ -47,8 +51,8 @@ export function setUserProperties(
   userId: string,
   properties: Record<string, any>
 ) {
+  initAmplitude();
   if (!amplitudeClient) {
-    console.warn("Amplitude not configured");
     return;
   }
 
