@@ -37,7 +37,7 @@ model Clinic {
   name         String
   description  String?
   city         String
-  specialties  String[] // JSON array stored as TEXT[]
+  specialties  String? // JSON array stored as TEXT
   address      String
   phone        String
   vetId        String     @unique
