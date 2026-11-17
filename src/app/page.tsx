@@ -5,7 +5,7 @@ export default function Home() {
         <div className="text-6xl mb-4">🐾</div>
         <h1 className="text-4xl font-bold mb-2">VetApp Marketplace</h1>
         <p className="text-xl text-gray-600 mb-8">Connecting veterinarians and pet owners</p>
-        <p className="text-gray-600">Coming soon... v2</p>
+        <p className="text-gray-600">Coming soon... v3</p>
       </div>
     </main>
   );
