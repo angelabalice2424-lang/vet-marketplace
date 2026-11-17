@@ -5,14 +5,12 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    isrMemoryCacheSize: 0,
-  },
+  swcMinify: true,
 };
 
 module.exports = nextConfig;
