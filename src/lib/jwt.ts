@@ -1,7 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.NEXTAUTH_SECRET || 'secret-key-dev';
-
 export interface JWTPayload {
   id: string;
   email: string;
@@ -9,13 +7,22 @@ export interface JWTPayload {
   role: string;
 }
 
+// Read lazily so that `next build` does not require the secret.
+function getSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('NEXTAUTH_SECRET must be set and at least 32 characters long');
+  }
+  return secret;
+}
+
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getSecret(), { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, SECRET) as JWTPayload;
+    return jwt.verify(token, getSecret()) as JWTPayload;
   } catch {
     return null;
   }
