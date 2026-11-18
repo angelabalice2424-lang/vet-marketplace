@@ -1,15 +1,25 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { verifyToken } from '@/lib/jwt';
 
 export const metadata = {
   title: 'Dashboard - VetApp',
   description: 'VetApp Dashboard',
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Real session check: the middleware only confirms the cookie exists.
+  const token = cookies().get('auth-token')?.value;
+  const session = token ? verifyToken(token) : null;
+  if (!session) {
+    redirect('/login');
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow">
