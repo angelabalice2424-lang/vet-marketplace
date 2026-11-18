@@ -9,3 +9,10 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// Initialize database on first load
+if (typeof globalThis !== 'undefined' && !globalForPrisma.prisma) {
+  import('./init-db').then(({ initializeDatabase }) => {
+    initializeDatabase().catch(console.error);
+  });
+}
