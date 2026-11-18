@@ -11,6 +11,8 @@ export function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
+    // Token verification is optional here - we just check if it exists
+    // Full validation happens on the page level if needed
   }
 
   return NextResponse.next();

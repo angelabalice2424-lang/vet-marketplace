@@ -1,6 +1,7 @@
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import bcryptjs from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
+import { findUserByEmail, createUser } from '@/app/api/auth/mock-users';
+import { generateToken } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,35 +15,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
+    if (findUserByEmail(email)) {
       return NextResponse.json(
         { message: 'User already exists' },
         { status: 409 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordHash = await bcryptjs.hash(password, 10);
+    const userId = `user_${Date.now()}`;
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        role,
-      },
+    const newUser = createUser({
+      id: userId,
+      email,
+      name,
+      passwordHash,
+      role,
     });
 
-    return NextResponse.json(
+    const token = generateToken({
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+    });
+
+    const response = NextResponse.json(
       {
         message: 'User created successfully',
-        user: { id: user.id, email: user.email, name: user.name, role: user.role },
+        user: { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role },
+        token,
       },
       { status: 201 }
     );
+
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    return response;
   } catch (error) {
     console.error('Signup error:', error);
     return NextResponse.json(
